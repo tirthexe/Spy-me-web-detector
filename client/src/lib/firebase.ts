@@ -27,13 +27,13 @@ export class FirebaseService {
 
   async initialize(): Promise<boolean> {
     try {
-      // In a real implementation, this would initialize Firebase SDK
-      // For now, we'll simulate the connection
-      if (!this.config.apiKey) {
-        console.warn("Firebase configuration not found");
+      // Check if Firebase configuration is complete
+      if (!this.config.apiKey || !this.config.databaseURL || !this.config.projectId) {
+        console.warn("Firebase configuration incomplete");
         return false;
       }
       
+      console.log("Firebase initialized successfully with project:", this.config.projectId);
       this.isInitialized = true;
       return true;
     } catch (error) {

@@ -72,7 +72,8 @@ export class MemStorage implements IStorage {
     const log: AccessLog = { 
       ...insertLog, 
       id, 
-      timestamp: new Date()
+      timestamp: new Date(),
+      firebaseId: insertLog.firebaseId || null
     };
     this.accessLogs.set(id, log);
     return log;

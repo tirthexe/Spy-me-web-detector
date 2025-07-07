@@ -30,6 +30,15 @@ export default function Home() {
     microphone: 'granted' | 'denied' | 'prompt';
     camera: 'granted' | 'denied' | 'prompt';
   }>({ microphone: 'prompt', camera: 'prompt' });
+  const [installedApps, setInstalledApps] = useState<Array<{
+    name: string;
+    permissions: {
+      microphone: boolean;
+      camera: boolean;
+    };
+    lastAccess: string | null;
+  }>>([]);
+  const [showAppScanner, setShowAppScanner] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -79,6 +88,27 @@ export default function Home() {
     };
     
     checkPermissions();
+    
+    // Simulate scanning for apps with permissions
+    const scanInstalledApps = () => {
+      // In a real implementation, this would query system APIs
+      // For web demo, we'll simulate common apps
+      const simulatedApps = [
+        { name: "WhatsApp", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-07T12:30:00Z" },
+        { name: "Instagram", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-07T11:15:00Z" },
+        { name: "Zoom", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-07T09:45:00Z" },
+        { name: "Facebook", permissions: { microphone: false, camera: true }, lastAccess: "2025-07-06T16:20:00Z" },
+        { name: "TikTok", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-06T14:10:00Z" },
+        { name: "Snapchat", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-06T10:30:00Z" },
+        { name: "Discord", permissions: { microphone: true, camera: false }, lastAccess: "2025-07-05T20:15:00Z" },
+        { name: "Google Meet", permissions: { microphone: true, camera: true }, lastAccess: null },
+        { name: "Telegram", permissions: { microphone: true, camera: false }, lastAccess: null },
+        { name: "Skype", permissions: { microphone: true, camera: true }, lastAccess: null },
+      ];
+      setInstalledApps(simulatedApps);
+    };
+    
+    scanInstalledApps();
   }, []);
 
   // Update current time
@@ -429,7 +459,18 @@ export default function Home() {
                   </div>
 
                   <div className="bg-cyber-gray rounded-lg p-4">
-                    <h4 className="font-semibold mb-2">Current Permissions</h4>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold">Current Browser Permissions</h4>
+                      <Button
+                        onClick={() => setShowAppScanner(!showAppScanner)}
+                        variant="outline"
+                        size="sm"
+                        className="bg-cyber-blue hover:bg-blue-600 text-white border-cyber-blue"
+                      >
+                        <List className="w-4 h-4 mr-2" />
+                        {showAppScanner ? 'Hide' : 'Scan Apps'}
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">Microphone:</span>
@@ -520,6 +561,98 @@ export default function Home() {
             </Card>
           </div>
         </div>
+
+        {/* App Scanner */}
+        {showAppScanner && (
+          <Card className="bg-cyber-surface border-cyber-gray mb-8">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-6 flex items-center">
+                <Shield className="mr-2 text-cyber-blue" />
+                App Permission Scanner
+                <span className="ml-2 text-sm text-gray-400">({installedApps.length} apps found)</span>
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div className="bg-cyber-gray rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Mic className="w-5 h-5 text-cyber-blue" />
+                    <span className="font-semibold">Microphone Access</span>
+                  </div>
+                  <div className="text-2xl font-bold text-cyber-blue">
+                    {installedApps.filter(app => app.permissions.microphone).length}
+                  </div>
+                  <div className="text-sm text-gray-400">apps have permission</div>
+                </div>
+                
+                <div className="bg-cyber-gray rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Camera className="w-5 h-5 text-cyber-purple" />
+                    <span className="font-semibold">Camera Access</span>
+                  </div>
+                  <div className="text-2xl font-bold text-cyber-purple">
+                    {installedApps.filter(app => app.permissions.camera).length}
+                  </div>
+                  <div className="text-sm text-gray-400">apps have permission</div>
+                </div>
+                
+                <div className="bg-cyber-gray rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Bell className="w-5 h-5 text-cyber-red" />
+                    <span className="font-semibold">High Risk Apps</span>
+                  </div>
+                  <div className="text-2xl font-bold text-cyber-red">
+                    {installedApps.filter(app => app.permissions.microphone && app.permissions.camera).length}
+                  </div>
+                  <div className="text-sm text-gray-400">apps have both permissions</div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold mb-3">App Permission Details</h3>
+                {installedApps.map((app, index) => (
+                  <div key={index} className="bg-cyber-gray rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-cyber-blue to-cyber-purple rounded-lg flex items-center justify-center text-white font-bold">
+                        {app.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{app.name}</h4>
+                        {app.lastAccess && (
+                          <p className="text-xs text-gray-400">
+                            Last access: {formatTimeAgo(app.lastAccess)}
+                          </p>
+                        )}
+                        {!app.lastAccess && (
+                          <p className="text-xs text-gray-500">Never used</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Mic className={`w-4 h-4 ${app.permissions.microphone ? 'text-cyber-green' : 'text-gray-500'}`} />
+                        <span className={`text-xs ${app.permissions.microphone ? 'text-cyber-green' : 'text-gray-500'}`}>
+                          {app.permissions.microphone ? 'Granted' : 'Denied'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Camera className={`w-4 h-4 ${app.permissions.camera ? 'text-cyber-green' : 'text-gray-500'}`} />
+                        <span className={`text-xs ${app.permissions.camera ? 'text-cyber-green' : 'text-gray-500'}`}>
+                          {app.permissions.camera ? 'Granted' : 'Denied'}
+                        </span>
+                      </div>
+                      {app.permissions.microphone && app.permissions.camera && (
+                        <div className="bg-cyber-red px-2 py-1 rounded text-xs font-semibold">
+                          HIGH RISK
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Access Logs */}
         <Card className="bg-cyber-surface border-cyber-gray">

@@ -20,22 +20,52 @@ const apps = [
 ];
 
 export default function Home() {
-  const [selectedApp, setSelectedApp] = useState("instagram");
-  const [selectedType, setSelectedType] = useState<"microphone" | "camera">("microphone");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [firebaseConnected, setFirebaseConnected] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationData, setNotificationData] = useState<{ app: string; type: string } | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<{
+    microphone: 'granted' | 'denied' | 'prompt';
+    camera: 'granted' | 'denied' | 'prompt';
+  }>({ microphone: 'prompt', camera: 'prompt' });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Initialize Firebase
+  // Initialize Firebase and check permissions
   useEffect(() => {
     const initFirebase = async () => {
       const connected = await firebaseService.initialize();
       setFirebaseConnected(connected);
     };
     initFirebase();
+    
+    // Check current permissions
+    const checkPermissions = async () => {
+      try {
+        const micPermission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        const cameraPermission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        
+        setPermissionStatus({
+          microphone: micPermission.state,
+          camera: cameraPermission.state
+        });
+        
+        // Listen for permission changes
+        micPermission.addEventListener('change', () => {
+          setPermissionStatus(prev => ({ ...prev, microphone: micPermission.state }));
+        });
+        
+        cameraPermission.addEventListener('change', () => {
+          setPermissionStatus(prev => ({ ...prev, camera: cameraPermission.state }));
+        });
+      } catch (error) {
+        console.log('Permission API not supported');
+      }
+    };
+    
+    checkPermissions();
   }, []);
 
   // Update current time
@@ -111,7 +141,7 @@ export default function Home() {
     }
   };
 
-  const handleSimulateAccess = async () => {
+  const handleTestMicrophone = async () => {
     if (!monitoringStatus?.isEnabled) {
       toast({
         title: "Monitoring Disabled",
@@ -122,37 +152,101 @@ export default function Home() {
     }
 
     try {
-      // Push to Firebase first
+      setIsListening(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMediaStream(stream);
+      
+      // Log the real access
       let firebaseId = null;
       if (firebaseConnected) {
         const alertData = {
-          app: selectedApp,
-          type: selectedType,
+          app: "SpyMe Web App",
+          type: "microphone",
           timestamp: new Date().toISOString(),
         };
         firebaseId = await firebaseService.pushAlert(alertData);
       }
 
-      // Create local log
       await createLogMutation.mutateAsync({
-        app: selectedApp,
-        type: selectedType,
+        app: "SpyMe Web App",
+        type: "microphone",
         firebaseId,
       });
 
-      // Show notification
-      setNotificationData({ app: selectedApp, type: selectedType });
+      setNotificationData({ app: "SpyMe Web App", type: "microphone" });
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
 
       toast({
-        title: "Access Detected!",
-        description: `${selectedApp} accessed your ${selectedType}`,
+        title: "Microphone Access Detected!",
+        description: "SpyMe Web App is now accessing your microphone",
       });
+
+      // Stop after 3 seconds
+      setTimeout(() => {
+        stream.getTracks().forEach(track => track.stop());
+        setMediaStream(null);
+        setIsListening(false);
+      }, 3000);
+    } catch (error) {
+      setIsListening(false);
+      toast({
+        title: "Microphone Access Denied",
+        description: "Please grant microphone permission to test detection",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTestCamera = async () => {
+    if (!monitoringStatus?.isEnabled) {
+      toast({
+        title: "Monitoring Disabled",
+        description: "Please enable monitoring to detect access",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setMediaStream(stream);
+      
+      // Log the real access
+      let firebaseId = null;
+      if (firebaseConnected) {
+        const alertData = {
+          app: "SpyMe Web App",
+          type: "camera",
+          timestamp: new Date().toISOString(),
+        };
+        firebaseId = await firebaseService.pushAlert(alertData);
+      }
+
+      await createLogMutation.mutateAsync({
+        app: "SpyMe Web App",
+        type: "camera",
+        firebaseId,
+      });
+
+      setNotificationData({ app: "SpyMe Web App", type: "camera" });
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+
+      toast({
+        title: "Camera Access Detected!",
+        description: "SpyMe Web App is now accessing your camera",
+      });
+
+      // Stop after 3 seconds
+      setTimeout(() => {
+        stream.getTracks().forEach(track => track.stop());
+        setMediaStream(null);
+      }, 3000);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to simulate access detection",
+        title: "Camera Access Denied",
+        description: "Please grant camera permission to test detection",
         variant: "destructive",
       });
     }
@@ -259,64 +353,72 @@ export default function Home() {
                   />
                 </div>
 
-                {/* Simulation Controls */}
+                {/* Real Access Detection */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg mb-4">Simulation Tools</h3>
+                  <h3 className="font-semibold text-lg mb-4">Real Access Detection</h3>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Select App</label>
-                      <Select value={selectedApp} onValueChange={setSelectedApp}>
-                        <SelectTrigger className="bg-cyber-gray border-gray-600">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {apps.map((app) => (
-                            <SelectItem key={app.value} value={app.value}>
-                              {app.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Access Type</label>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant={selectedType === "microphone" ? "default" : "outline"}
-                          onClick={() => setSelectedType("microphone")}
-                          className="flex-1 bg-cyber-blue hover:bg-blue-600"
-                        >
-                          <Mic className="mr-2 w-4 h-4" />
-                          Mic
-                        </Button>
-                        <Button
-                          variant={selectedType === "camera" ? "default" : "outline"}
-                          onClick={() => setSelectedType("camera")}
-                          className="flex-1 bg-cyber-purple hover:bg-purple-600"
-                        >
-                          <Camera className="mr-2 w-4 h-4" />
-                          Camera
-                        </Button>
-                      </div>
+                  <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Info className="w-5 h-5 text-yellow-500" />
+                      <p className="text-sm text-yellow-200">
+                        Test real microphone/camera access on this device. The app will request actual permissions and log the access.
+                      </p>
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleSimulateAccess}
-                    disabled={createLogMutation.isPending}
-                    className="w-full bg-cyber-green hover:bg-green-600 text-cyber-dark font-semibold"
-                  >
-                    {createLogMutation.isPending ? (
-                      "Detecting..."
-                    ) : (
-                      <>
-                        <Bell className="mr-2 w-4 h-4" />
-                        Trigger Access Detection
-                      </>
-                    )}
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Button
+                      onClick={handleTestMicrophone}
+                      disabled={createLogMutation.isPending || isListening}
+                      className="bg-cyber-blue hover:bg-blue-600 text-white p-6"
+                    >
+                      <div className="flex flex-col items-center space-y-2">
+                        <Mic className="w-6 h-6" />
+                        <span className="font-medium">Test Microphone</span>
+                        <span className="text-xs opacity-75">
+                          {isListening ? "Listening..." : "Click to access mic"}
+                        </span>
+                      </div>
+                    </Button>
+
+                    <Button
+                      onClick={handleTestCamera}
+                      disabled={createLogMutation.isPending}
+                      className="bg-cyber-purple hover:bg-purple-600 text-white p-6"
+                    >
+                      <div className="flex flex-col items-center space-y-2">
+                        <Camera className="w-6 h-6" />
+                        <span className="font-medium">Test Camera</span>
+                        <span className="text-xs opacity-75">Click to access camera</span>
+                      </div>
+                    </Button>
+                  </div>
+
+                  <div className="bg-cyber-gray rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Current Permissions</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Microphone:</span>
+                        <span className={`text-sm font-medium ${
+                          permissionStatus.microphone === 'granted' ? 'text-cyber-green' : 
+                          permissionStatus.microphone === 'denied' ? 'text-cyber-red' : 'text-yellow-500'
+                        }`}>
+                          {permissionStatus.microphone === 'granted' ? 'Granted' : 
+                           permissionStatus.microphone === 'denied' ? 'Denied' : 'Not Requested'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Camera:</span>
+                        <span className={`text-sm font-medium ${
+                          permissionStatus.camera === 'granted' ? 'text-cyber-green' : 
+                          permissionStatus.camera === 'denied' ? 'text-cyber-red' : 'text-yellow-500'
+                        }`}>
+                          {permissionStatus.camera === 'granted' ? 'Granted' : 
+                           permissionStatus.camera === 'denied' ? 'Denied' : 'Not Requested'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

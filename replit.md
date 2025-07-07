@@ -2,7 +2,7 @@
 
 ## Overview
 
-SpyMe is a web-based security monitoring application that serves as a companion to an Android app for detecting and logging microphone and camera access. The system consists of a full-stack TypeScript application with React frontend and Express backend, designed to track and display real-time access logs from various applications attempting to use device sensors.
+SpyMe is a web-based security monitoring application that demonstrates real-time microphone and camera access detection. The system consists of a full-stack TypeScript application with React frontend and Express backend, designed to track and display access logs when the web app itself requests device permissions. This serves as a cybersecurity educational tool showing how access monitoring could work in principle.
 
 ## System Architecture
 
@@ -81,10 +81,36 @@ SpyMe is a web-based security monitoring application that serves as a companion 
 - **Storage**: Abstracted storage layer allows easy migration from memory to persistent storage
 - **API**: Stateless backend design supports horizontal scaling
 
+## Current Implementation Status
+
+### Working Features
+- Real browser-based microphone and camera access detection
+- Firebase integration for real-time alert logging
+- Responsive cybersecurity-themed interface
+- Permission status monitoring
+- Access log history with timestamps
+- Master monitoring toggle
+
+### Web Browser Limitations
+- Cannot detect other applications accessing device microphone/camera
+- Cannot run background monitoring when browser is closed
+- Cannot access system-level permissions like Android's AppOpsManager
+- Limited to web browser security sandbox
+
+### For True Android Implementation
+To create a real Android app with full system-level monitoring:
+1. Use Android Studio with Kotlin
+2. Implement AppOpsManager for usage monitoring
+3. Use UsageStatsManager for foreground app detection
+4. Create foreground service for background monitoring
+5. Request PACKAGE_USAGE_STATS permission
+
 ## Changelog
 
-- July 07, 2025. Initial setup
+- July 07, 2025. Initial setup with Firebase integration
+- July 07, 2025. Converted from simulation to real browser-based detection
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Wants fully functional real-world implementation for potential Play Store deployment.

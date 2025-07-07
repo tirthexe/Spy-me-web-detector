@@ -62,6 +62,19 @@ export default function Home() {
         });
       } catch (error) {
         console.log('Permission API not supported');
+        // Fallback: check if we can access media devices
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const hasAudio = devices.some(device => device.kind === 'audioinput');
+          const hasVideo = devices.some(device => device.kind === 'videoinput');
+          
+          setPermissionStatus({
+            microphone: hasAudio ? 'granted' : 'prompt',
+            camera: hasVideo ? 'granted' : 'prompt'
+          });
+        } catch (fallbackError) {
+          console.log('MediaDevices API not supported');
+        }
       }
     };
     
@@ -156,6 +169,9 @@ export default function Home() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMediaStream(stream);
       
+      // Update permission status immediately after grant
+      setPermissionStatus(prev => ({ ...prev, microphone: 'granted' }));
+      
       // Log the real access
       let firebaseId = null;
       if (firebaseConnected) {
@@ -190,6 +206,7 @@ export default function Home() {
       }, 3000);
     } catch (error) {
       setIsListening(false);
+      setPermissionStatus(prev => ({ ...prev, microphone: 'denied' }));
       toast({
         title: "Microphone Access Denied",
         description: "Please grant microphone permission to test detection",
@@ -211,6 +228,9 @@ export default function Home() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       setMediaStream(stream);
+      
+      // Update permission status immediately after grant
+      setPermissionStatus(prev => ({ ...prev, camera: 'granted' }));
       
       // Log the real access
       let firebaseId = null;
@@ -244,6 +264,7 @@ export default function Home() {
         setMediaStream(null);
       }, 3000);
     } catch (error) {
+      setPermissionStatus(prev => ({ ...prev, camera: 'denied' }));
       toast({
         title: "Camera Access Denied",
         description: "Please grant camera permission to test detection",
@@ -357,14 +378,27 @@ export default function Home() {
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg mb-4">Real Access Detection</h3>
                   
-                  <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Info className="w-5 h-5 text-yellow-500" />
-                      <p className="text-sm text-yellow-200">
-                        Test real microphone/camera access on this device. The app will request actual permissions and log the access.
-                      </p>
+                  {(permissionStatus.microphone === 'prompt' || permissionStatus.camera === 'prompt') && (
+                    <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <Info className="w-5 h-5 text-yellow-500" />
+                        <p className="text-sm text-yellow-200">
+                          Test real microphone/camera access on this device. The app will request actual permissions and log the access.
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  
+                  {(permissionStatus.microphone === 'granted' && permissionStatus.camera === 'granted') && (
+                    <div className="bg-green-900/20 border border-green-600 rounded-lg p-4 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <Shield className="w-5 h-5 text-green-500" />
+                        <p className="text-sm text-green-200">
+                          Permissions granted! Click the buttons below to test real-time access detection.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button

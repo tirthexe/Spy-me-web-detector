@@ -86,30 +86,92 @@ export default function Home() {
         }
       }
     };
-    
+
     checkPermissions();
     
-    // Simulate scanning for apps with permissions
-    const scanInstalledApps = () => {
-      // In a real implementation, this would query system APIs
-      // For web demo, we'll simulate common apps
-      const simulatedApps = [
-        { name: "WhatsApp", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-07T12:30:00Z" },
-        { name: "Instagram", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-07T11:15:00Z" },
-        { name: "Zoom", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-07T09:45:00Z" },
-        { name: "Facebook", permissions: { microphone: false, camera: true }, lastAccess: "2025-07-06T16:20:00Z" },
-        { name: "TikTok", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-06T14:10:00Z" },
-        { name: "Snapchat", permissions: { microphone: true, camera: true }, lastAccess: "2025-07-06T10:30:00Z" },
-        { name: "Discord", permissions: { microphone: true, camera: false }, lastAccess: "2025-07-05T20:15:00Z" },
-        { name: "Google Meet", permissions: { microphone: true, camera: true }, lastAccess: null },
-        { name: "Telegram", permissions: { microphone: true, camera: false }, lastAccess: null },
-        { name: "Skype", permissions: { microphone: true, camera: true }, lastAccess: null },
-      ];
-      setInstalledApps(simulatedApps);
+    // Real browser-based app detection
+    const scanRealApps = async () => {
+      const detectedApps = [];
+      
+      try {
+        // Current browser/tab with actual permissions
+        const browserName = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                           navigator.userAgent.includes('Firefox') ? 'Firefox' : 
+                           navigator.userAgent.includes('Safari') ? 'Safari' : 
+                           navigator.userAgent.includes('Edge') ? 'Edge' : 'Browser';
+        
+        detectedApps.push({
+          name: `${browserName} - SpyMe App`,
+          permissions: {
+            microphone: permissionStatus.microphone === 'granted',
+            camera: permissionStatus.camera === 'granted'
+          },
+          lastAccess: new Date().toISOString()
+        });
+
+        // Check available media devices to understand hardware
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioInputs = devices.filter(device => device.kind === 'audioinput');
+          const videoInputs = devices.filter(device => device.kind === 'videoinput');
+
+          if (audioInputs.length > 0) {
+            audioInputs.forEach((device, index) => {
+              detectedApps.push({
+                name: device.label || `Microphone ${index + 1}`,
+                permissions: { microphone: true, camera: false },
+                lastAccess: null
+              });
+            });
+          }
+
+          if (videoInputs.length > 0) {
+            videoInputs.forEach((device, index) => {
+              detectedApps.push({
+                name: device.label || `Camera ${index + 1}`,
+                permissions: { microphone: false, camera: true },
+                lastAccess: null
+              });
+            });
+          }
+        } catch (deviceError) {
+          console.log('Could not enumerate devices');
+        }
+
+        // Check for PWA installations if available
+        if ('getInstalledRelatedApps' in navigator) {
+          try {
+            const relatedApps = await (navigator as any).getInstalledRelatedApps();
+            relatedApps.forEach((app: any) => {
+              detectedApps.push({
+                name: app.platform === 'webapp' ? `PWA: ${app.url}` : app.id,
+                permissions: { microphone: false, camera: false },
+                lastAccess: null
+              });
+            });
+          } catch (error) {
+            console.log('PWA detection not available');
+          }
+        }
+
+      } catch (error) {
+        console.error('Error detecting real apps:', error);
+        // Minimal fallback
+        detectedApps.push({
+          name: "Current Browser Session",
+          permissions: {
+            microphone: permissionStatus.microphone === 'granted',
+            camera: permissionStatus.camera === 'granted'
+          },
+          lastAccess: new Date().toISOString()
+        });
+      }
+
+      setInstalledApps(detectedApps);
     };
     
-    scanInstalledApps();
-  }, []);
+    scanRealApps();
+  }, [permissionStatus]);
 
   // Update current time
   useEffect(() => {
@@ -461,15 +523,29 @@ export default function Home() {
                   <div className="bg-cyber-gray rounded-lg p-4">
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="font-semibold">Current Browser Permissions</h4>
-                      <Button
-                        onClick={() => setShowAppScanner(!showAppScanner)}
-                        variant="outline"
-                        size="sm"
-                        className="bg-cyber-blue hover:bg-blue-600 text-white border-cyber-blue"
-                      >
-                        <List className="w-4 h-4 mr-2" />
-                        {showAppScanner ? 'Hide' : 'Scan Apps'}
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={async () => {
+                            // Re-scan permissions and apps
+                            window.location.reload();
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="bg-cyber-green hover:bg-green-600 text-cyber-dark border-cyber-green"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Refresh
+                        </Button>
+                        <Button
+                          onClick={() => setShowAppScanner(!showAppScanner)}
+                          variant="outline"
+                          size="sm"
+                          className="bg-cyber-blue hover:bg-blue-600 text-white border-cyber-blue"
+                        >
+                          <List className="w-4 h-4 mr-2" />
+                          {showAppScanner ? 'Hide' : 'Scan Apps'}
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">

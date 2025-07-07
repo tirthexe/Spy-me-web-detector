@@ -1,0 +1,77 @@
+Create a full Android app in *Kotlin* using Android Studio, named *"SpyMe – Mic & Camera Access Detector"*. This is for a cybersecurity college project.
+
+🎯 Objective:
+Build an app that detects when the device’s *microphone or camera* is accessed by any app. When detection occurs, it should:
+1. Save a log locally
+2. Send a *real-time alert to Firebase Realtime Database*
+3. Show current status and access history in the app UI
+
+✅ Core Functionalities:
+1. Use AppOpsManager to detect mic/camera usage
+2. Use UsageStatsManager to detect the foreground app during access
+3. Use a *ForegroundService* to monitor continuously in the background
+4. On detection:
+   - Store log in local storage (Room DB or SharedPreferences)
+   - Push data to Firebase under /alerts/{timestamp} with structure:
+     json
+     {
+       "app": "Instagram",
+       "type": "microphone",
+       "time": "2025-07-07 15:30"
+     }
+     
+   - Optionally show a local notification to the phone user
+
+✅ UI Design (activity_main.xml):
+- Live status indicator (e.g., "Monitoring On")
+- Last accessed app (e.g., "Camera used by WhatsApp")
+- Scrollable log list (RecyclerView or ListView)
+- Toggle to enable/disable monitoring
+
+📦 Project Structure:
+- MainActivity.kt → UI logic and toggle
+- MonitorService.kt → Foreground service
+- FirebaseHelper.kt → Push alerts to Firebase
+- AppUsageHelper.kt → Get foreground app
+- LogEntry.kt → Data class
+- LogDatabase.kt → (Room DB)
+- activity_main.xml → UI Layout
+
+⚙ Required Permissions:
+- PACKAGE_USAGE_STATS
+- FOREGROUND_SERVICE
+- INTERNET
+- POST_NOTIFICATIONS (for Android 13+)
+- Add code to request usage access if not already granted
+
+🛠 Tech Stack:
+- Kotlin
+- AndroidX Jetpack
+- Firebase Realtime Database SDK
+- ForegroundService
+- Room (or SharedPreferences if simpler)
+- Material Components UI
+
+📱 Android Version Compatibility:
+- API level 26 (Android 8) to API 34 (Android 15)
+- Handle OS restrictions gracefully:
+  - Use fallback messages on Android 8–10 if exact app name not available
+
+📤 Firebase:
+- Include Firebase SDK dependencies in build.gradle
+- Use google-services.json for configuration
+- Firebase Realtime DB rules: allow read/write for demo
+
+📝 Notes:
+- This is an ethical project to demonstrate how users can protect their privacy by getting notified when any background app accesses their mic or camera.
+- No malicious activity or data collection
+- Include comments in code for each function
+- Make sure app is Android Studio compatible and ready to run
+
+📌 Final Deliverables:
+- Full Kotlin code
+- XML UI
+- Firebase integration
+- Foreground service
+- Local logging
+- Firebase alert push

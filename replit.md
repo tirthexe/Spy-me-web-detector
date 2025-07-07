@@ -91,11 +91,13 @@ SpyMe is a web-based security monitoring application that demonstrates real-time
 - Access log history with timestamps
 - Master monitoring toggle
 
-### Web Browser Limitations
-- Cannot detect other applications accessing device microphone/camera
+### Web Browser Limitations (Critical)
+- **Cannot detect WhatsApp, Instagram, or any other apps accessing microphone/camera**
+- **Cannot monitor system-level app permissions outside browser**
 - Cannot run background monitoring when browser is closed
-- Cannot access system-level permissions like Android's AppOpsManager
-- Limited to web browser security sandbox
+- Cannot access Android's AppOpsManager or UsageStatsManager APIs
+- Limited to web browser security sandbox only
+- **Only shows browser's own permission status, not other applications**
 
 ### For True Android Implementation
 To create a real Android app with full system-level monitoring:

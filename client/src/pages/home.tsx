@@ -644,9 +644,46 @@ export default function Home() {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-6 flex items-center">
                 <Shield className="mr-2 text-cyber-blue" />
-                App Permission Scanner
-                <span className="ml-2 text-sm text-gray-400">({installedApps.length} apps found)</span>
+                Browser Permission Scanner
+                <span className="ml-2 text-sm text-gray-400">({installedApps.length} detected)</span>
               </h2>
+              
+              <div className="bg-red-900/20 border border-red-600 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <Bell className="w-5 h-5 text-red-500 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-red-300 mb-2">Important Limitation</h3>
+                    <p className="text-sm text-red-200 mb-2">
+                      This web app <strong>cannot detect</strong> other applications like WhatsApp, Instagram, or TikTok accessing your microphone/camera.
+                    </p>
+                    <p className="text-sm text-red-200 mb-2">
+                      Web browsers can only show their own permission status for security reasons.
+                    </p>
+                    <p className="text-sm text-red-200">
+                      For real system-wide monitoring, you need a native Android app with special permissions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <Info className="w-5 h-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-blue-300 mb-2">Real Android Solution</h3>
+                    <p className="text-sm text-blue-200 mb-2">
+                      To detect WhatsApp, TikTok, and other apps accessing your mic/camera, you need:
+                    </p>
+                    <ul className="text-sm text-blue-200 space-y-1 ml-4">
+                      <li>• <strong>Android Studio</strong> with Kotlin development</li>
+                      <li>• <strong>AppOpsManager</strong> API for permission monitoring</li>
+                      <li>• <strong>UsageStatsManager</strong> for foreground app detection</li>
+                      <li>• <strong>PACKAGE_USAGE_STATS</strong> permission from user</li>
+                      <li>• <strong>Foreground Service</strong> for background monitoring</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 <div className="bg-cyber-gray rounded-lg p-4">
